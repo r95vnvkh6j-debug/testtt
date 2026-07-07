@@ -1,0 +1,426 @@
+:root {
+  --bg: #0A0A0B;
+  --frost: rgba(255, 255, 255, 0.055);
+  --frost-hover: rgba(255, 255, 255, 0.09);
+  --frost-strong: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-hover: rgba(255, 255, 255, 0.28);
+  --white: #FFFFFF;
+  --muted: rgba(255, 255, 255, 0.52);
+  --muted-dim: rgba(255, 255, 255, 0.3);
+  --accent-purple: #6C2BD9;
+  --accent-cyan: #00D4FF;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 400px;
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  position: relative;
+  cursor: default;
+}
+
+/* Abstract soft blurred atmosphere -- monochrome, echoes the reference
+   without reproducing any photographic silhouette */
+.ambient-blur {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 45%, transparent 72%);
+  filter: blur(50px);
+  z-index: -2;
+  animation: breathe 9s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  50%      { transform: translate(-48%, -53%) scale(1.12); opacity: 1; }
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.035;
+  background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+}
+
+/* Cursor-following ambient glow -- the signature fluid-motion element.
+   A soft purple/cyan halo that trails the pointer across the whole popup,
+   giving every surface a sense of life even when nothing is being clicked. */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 260px;
+  margin-left: -130px;
+  margin-top: -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 43, 217, 0.20) 0%, rgba(0, 212, 255, 0.10) 45%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+  will-change: transform;
+}
+
+.cursor-glow.visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-glow { display: none; }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  padding: 26px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Entrance choreography */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: reveal-in 0.6s var(--ease-out) forwards;
+  animation-delay: calc(var(--d, 0) * 90ms);
+}
+
+@keyframes reveal-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .ambient-blur, * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Header */
+header {
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+.wordmark {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 22px;
+  margin: 0 0 10px 0;
+  color: var(--white);
+  letter-spacing: 0.01em;
+}
+
+header h1 {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--white);
+}
+
+/* Frosted glass base */
+.glass-panel {
+  position: relative;
+  background:
+    radial-gradient(480px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.10), transparent 55%),
+    var(--frost);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 24px;
+  transition: background 0.5s var(--ease-fluid), border-color 0.35s var(--ease-out), transform 0.45s var(--ease-fluid), box-shadow 0.45s var(--ease-fluid);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-hover);
+}
+
+/* Magnetic tilt -- elements tagged .tilt get a subtle perspective response
+   to pointer position, applied via JS (interactions.js). Kept understated:
+   a few degrees only, so it reads as premium responsiveness, not a gimmick. */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease-fluid), box-shadow 0.45s var(--ease-fluid);
+  will-change: transform;
+}
+
+.tilt:active {
+  transition: transform 0.15s var(--ease-out);
+}
+
+/* Upload Zone */
+.upload-zone {
+  text-align: center;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 172px;
+}
+
+.upload-zone.dragover {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--frost-strong);
+  transform: scale(1.015);
+}
+
+.upload-icon {
+  color: var(--muted);
+  margin-bottom: 12px;
+  transition: color 0.3s var(--ease-out), transform 0.3s var(--ease-spring);
+}
+
+.upload-zone:hover .upload-icon {
+  color: var(--white);
+  transform: translateY(-3px);
+}
+
+.upload-zone h3 {
+  margin: 0 0 4px 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.upload-zone p {
+  margin: 0 0 18px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#processing-state h3, #success-state h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+/* Pill buttons -- the signature shape of this design */
+.btn-pill {
+  cursor: pointer;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.3s var(--ease-fluid), box-shadow 0.4s var(--ease-fluid), background 0.3s var(--ease-out), border-color 0.3s var(--ease-out);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pill:active {
+  transform: scale(0.97) !important;
+}
+
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s var(--ease-out);
+}
+
+.btn-primary:hover::before {
+  left: 130%;
+}
+
+.btn-primary span {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-primary {
+  background: var(--white);
+  color: #0A0A0B;
+  padding: 12px 28px;
+  width: 100%;
+  max-width: 220px;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.2);
+}
+
+/* Nav links */
+.nav-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-glass {
+  background: var(--frost);
+  border: 1px solid var(--border);
+  color: var(--white);
+  padding: 12px;
+}
+
+.btn-glass:hover {
+  background: var(--frost-hover);
+  border-color: var(--border-hover);
+}
+
+/* Divider, echoing the "Or continue with" motif */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Promo Panel */
+.promo-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-radius: 24px;
+}
+
+.promo-content h3 {
+  margin: 0 0 4px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.promo-content p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  max-width: 170px;
+  line-height: 1.4;
+}
+
+.btn-secondary {
+  background: var(--white);
+  color: #0A0A0B;
+  padding: 9px 18px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* Utilities & Animations */
+.hidden {
+  display: none !important;
+}
+
+#processing-state, #success-state, #upload-content {
+  animation: state-in 0.45s var(--ease-out);
+}
+
+@keyframes state-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  background: conic-gradient(from 0deg, var(--white), transparent, var(--white));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  border-radius: 999px;
+  transition: width 0.4s var(--ease-fluid);
+}
+
+/* Success icon micro-animation */
+.success-icon svg {
+  animation: pop-in 0.45s var(--ease-spring);
+}
+
+.success-circle {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+  animation: draw 0.55s var(--ease-out) forwards 0.1s;
+}
+
+.success-check {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: draw 0.3s var(--ease-out) forwards 0.5s;
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
